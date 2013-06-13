@@ -9,9 +9,6 @@ namespace SteamBot
 {
     public class MainUserHandler : UserHandler
     {
-        public int ScrapPutUp;
-        bool Success;
-
         public MainUserHandler(Bot bot, SteamID sid) : base(bot, sid) 
         {
             mySteamID = Bot.SteamUser.SteamID;

@@ -9,9 +9,6 @@ namespace SteamBot
 {
     public class GivingUserHandler : UserHandler
     {
-        bool Success;
-        enum TradeAction { CancelTrade, AddItem, RemoveItem, SetReady, AcceptTrade, SendMessage };
-
         public GivingUserHandler(Bot bot, SteamID sid) : base(bot, sid) 
         {
             Success = false;
@@ -201,99 +198,6 @@ namespace SteamBot
                     Bot.StopBot();
                 }
             }
-        }
-
-        /// <summary>
-        /// Adds all items from the given list.
-        /// </summary>
-        /// <returns>Number of items added.</returns>
-        private uint AddItemsFromList(List<Inventory.Item> items)
-        {
-            Log.Debug("Method called");
-            Log.Debug("" + items.Count);
-            uint added = 0;
-
-            foreach (Inventory.Item item in items)
-            {
-                if (item != null && !item.IsNotTradeable)
-                {
-                    if (TryAction(TradeAction.AddItem, item))
-                    {
-                        Log.Debug("Item successfully added");
-                        added++;
-                    }
-                    else
-                    {
-                        Log.Debug("ADDING FAILED, returning to cancel");
-                        return 0;
-                    }
-                }
-            }
-            return added;
-        }
-
-        /// <summary>
-        /// Gets all tradeable items other than normal crates.
-        /// </summary>
-        /// <returns>List of items to add.</returns>
-        public List<Inventory.Item> GetAllNonCrates(Inventory inv)
-        {
-            var items = new List<Inventory.Item>();
-            foreach (Inventory.Item item in inv.Items)
-            {
-                if (item.Defindex != 5022 && item.Defindex != 5041 && item.Defindex != 5045 && item != null && !item.IsNotTradeable)
-                {
-                    items.Add(item);
-                }
-            }
-            return items;
-        }
-
-        private bool TryAction(TradeAction action, Inventory.Item item = null, bool ready = false, string message = null)
-        {
-            Log.Debug("Action: " + action);
-            int x = 0;
-            Success = false;
-            while (Success == false && x < 5)
-            {
-                x++;
-                try
-                {
-                    switch (action)
-                    {
-                        case TradeAction.CancelTrade:
-                            Success = Trade.CancelTrade(); break;
-                        case TradeAction.AddItem:
-                            Success = Trade.AddItem(item.Id); break;
-                        case TradeAction.RemoveItem:
-                            Success = Trade.RemoveItem(item.Id); break;
-                        case TradeAction.SetReady:
-                            Success = Trade.SetReady(ready); break;
-                        case TradeAction.AcceptTrade:
-                            Success = Trade.AcceptTrade(); break;
-                        case TradeAction.SendMessage:
-                            Success = Trade.SendMessage(message); break;
-                        default: Log.Error("Invalid trade action: " + action); break;
-                    }
-                }
-                catch (TradeException te)
-                {
-                    Log.Warn(action + " failed.");
-                    Log.Debug(string.Format("Loop #{0}/nException:{1}", x, te));
-                }
-                catch (Exception e)
-                {
-                    Log.Warn(action + " failed.");
-                    Log.Debug(string.Format("Loop #{0}/nException:{1}", x, e));
-                }
-            }
-            if (!Success)
-            {
-                Log.Error("Could not " + action);
-                if (action != TradeAction.CancelTrade)
-                    TryAction(TradeAction.CancelTrade);
-            }
-            return Success;
         }
     }
 
