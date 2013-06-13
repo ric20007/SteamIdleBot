@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace SteamBot
 {
@@ -18,18 +19,29 @@ namespace SteamBot
             Configuration config =  JsonConvert.DeserializeObject<Configuration>(json);
 
             config.Admins = config.Admins ?? new ulong[0];
+            int bots = config.Bots.Length;
 
-            // merge bot-specific admins with global admins
+            // Gets number of Bots by removing those that don't start or aren't Giving
+            // Must be done as a seperate loop to set all bots' values of numbot correctly
             foreach (BotInfo bot in config.Bots)
             {
-                if (bot.Admins == null)
+                if (!bot.AutoStart || (bot.BotControlClass != "SteamBot.GivingUserHandler"))
                 {
-                    bot.Admins = new ulong[config.Admins.Length];
-                    Array.Copy(config.Admins, bot.Admins, config.Admins.Length);
+                    bots--;
                 }
-                else
+            }
+
+            foreach (BotInfo bot in config.Bots)
+            {
+                bot.numBots = bots;   
+
+                // merge bot-specific admins with global admins
+                foreach (ulong admin in config.Admins)
                 {
-                    bot.Admins = bot.Admins.Concat(config.Admins).ToArray();
+                    if (!bot.Admins.Contains(admin))
+                    {
+                        bot.Admins.Add(admin);
+                    }
                 }
             }
 
@@ -128,7 +140,8 @@ namespace SteamBot
             public string DisplayNamePrefix { get; set; }
             public int TradePollingInterval { get; set; }
             public string LogLevel { get; set; }
-            public ulong[] Admins { get; set; }
+            public List<ulong> Admins { get; set; }
+            public int numBots;
 
             /// <summary>
             /// Gets or sets a value indicating whether to auto start this bot.

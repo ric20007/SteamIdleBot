@@ -28,7 +28,7 @@ namespace SteamBot
 
         public Log (string logFile, string botName = "", LogLevel output = LogLevel.Info)
         {
-            _FileStream = File.AppendText (logFile);
+            _FileStream = File.AppendText ("Logs\\" + logFile);
             _FileStream.AutoFlush = true;
             _Bot = botName;
             OutputToConsole = output;

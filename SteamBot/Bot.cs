@@ -28,7 +28,7 @@ namespace SteamBot
         public string ChatResponse;
 
         // A list of SteamIDs that this bot recognizes as admins.
-        public ulong[] Admins;
+        public List<ulong> Admins;
         public SteamFriends SteamFriends;
         public SteamClient SteamClient;
         public SteamTrading SteamTrade;
@@ -87,6 +87,8 @@ namespace SteamBot
 
         private BackgroundWorker backgroundWorker;
 
+        public int numBots;
+
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             logOnDetails = new SteamUser.LogOnDetails
@@ -100,9 +102,12 @@ namespace SteamBot
             MaximiumActionGap = config.MaximumActionGap;
             DisplayNamePrefix = config.DisplayNamePrefix;
             TradePollingInterval = config.TradePollingInterval <= 100 ? 800 : config.TradePollingInterval;
+
             Admins       = config.Admins;
             this.apiKey  = apiKey;
             this.isprocess = process;
+            numBots      = config.numBots;
+            
             try
             {
                 LogLevel = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), config.LogLevel, true);
@@ -168,7 +173,7 @@ namespace SteamBot
         /// </summary>
         public void StopBot()
         {
-            log.Debug("Tryring to shut down bot thread.");
+            log.Debug("Trying to shut down bot thread.");
             SteamClient.Disconnect();
 
             backgroundWorker.CancelAsync();
@@ -473,6 +478,7 @@ namespace SteamBot
                 {
                     log.Warn ("Trade failed: " + callback.Response);
                     CloseTrade ();
+                    GetUserHandler(SteamClient.SteamID).OnTradeError(callback.Response.ToString());
                 }
 
             });
@@ -499,7 +505,7 @@ namespace SteamBot
         {
             // get sentry file which has the machine hw info saved 
             // from when a steam guard code was entered
-            FileInfo fi = new FileInfo(String.Format("{0}.sentryfile", logOnDetails.Username));
+            FileInfo fi = new FileInfo(String.Format("Sentry Files\\{0}.sentryfile", logOnDetails.Username));
 
             if (fi.Exists && fi.Length > 0)
                 logOnDetails.SentryFileHash = SHAHash(File.ReadAllBytes(fi.FullName));
@@ -533,7 +539,7 @@ namespace SteamBot
         {
             byte[] hash = SHAHash (machineAuth.Data);
 
-            File.WriteAllBytes (String.Format ("{0}.sentryfile", logOnDetails.Username), machineAuth.Data);
+            File.WriteAllBytes (String.Format ("Sentry Files\\{0}.sentryfile", logOnDetails.Username), machineAuth.Data);
             
             var authResponse = new SteamUser.MachineAuthDetails
             {
@@ -659,6 +665,7 @@ namespace SteamBot
             {
                 CallbackMsg msg = SteamClient.WaitForCallback(true);
                 HandleSteamMessage(msg);
+
             }
         }
 
